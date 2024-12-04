@@ -6,7 +6,6 @@
 
 #include "project_setup.h"
 
-
 #define CMD_SWRESET 0x01 /*Software reset 14.2.1*/
 #define CMD_SLPOUT  0x11 /*Sleep out 14.2.12*/
 #define CMD_DISPOFF  0x28 /*Display off 14.2.18*/
@@ -15,9 +14,7 @@
 #define CMD_RASET   0x2B /*Page Address Set 14.2.21*/
 #define CMD_RAMWR   0x2C /*Memory Write 14.2.22*/
 #define CMD_MADCTL  0x36 /*Memory access control 14.2.29*/
-#define CMD_COLMOD  0x3A /*Interface Pixel Format 14.2.23*/
-
-#define RGB(r, g, b) (((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3))
+#define CMD_COLMOD  0x3A /*Interface Pixel Format 14.2.33*/
 
 void sendCommand(uint8_t command);
 void sendData(uint8_t data);
@@ -25,10 +22,6 @@ void sendDataBuffer(const uint8_t *data, size_t size);
 void initDisplay();
 void drawBitmap(const uint8_t *bitmap);
 void resetDisplay();
-
-typedef struct display_bitmap {
-    uint8_t data[TFT_WIDTH * TFT_HEIGHT * 2];
-} DisplayBitmap;
 
 extern spi_device_handle_t spi;
 

@@ -30,31 +30,6 @@ void sendDataBuffer(const uint8_t *data, size_t size) {
     }
 }
 
-
-void initDisplay() {
-    sendCommand(CMD_SWRESET); // Software reset
-    vTaskDelay(pdMS_TO_TICKS(150));
-    sendCommand(CMD_SLPOUT);  // Exit sleep mode
-    vTaskDelay(pdMS_TO_TICKS(150));
-
-    // 14.2.33 0101 16 bit/pixel
-    sendCommand(CMD_COLMOD);  // Set color mode
-    sendData(0x05);           // 16-bit color (RGB565)
-
-    sendCommand(CMD_MADCTL);  // Memory Access Control
-    sendData(0x00);           // Default orientation
-
-    sendCommand(CMD_DISPON);  // Turn on display
-    vTaskDelay(pdMS_TO_TICKS(100));
-}
-
-void resetDisplay() {
-    gpio_set_level(TFT_RST, 0);
-    vTaskDelay(pdMS_TO_TICKS(10));
-    gpio_set_level(TFT_RST, 1);
-    vTaskDelay(pdMS_TO_TICKS(120));
-}
-
 void drawBitmap(const uint8_t *bitmap) {
     // Page 117 describes flow of these actions
 
@@ -71,5 +46,31 @@ void drawBitmap(const uint8_t *bitmap) {
     sendData(TFT_HEIGHT - 1); // Low byte ending row
 
     sendCommand(CMD_RAMWR); // write data
-    sendDataBuffer(bitmap, TFT_WIDTH * TFT_HEIGHT * 2); // 2 bytes per pixel
+    sendDataBuffer(bitmap, BITMAP_SIZE); // *2 because conversion from 16bit to 8bit array is done 
+}
+
+
+void initDisplay() {
+    sendCommand(CMD_SWRESET); // Software reset
+    vTaskDelay(pdMS_TO_TICKS(150));
+    sendCommand(CMD_SLPOUT);  // Exit sleep mode
+    vTaskDelay(pdMS_TO_TICKS(150));
+
+    // setting default color mode of display (14.2.33) 0101  == 16 bit/pixel
+    sendCommand(CMD_COLMOD);  // Set color mode
+    sendData(0x05);           // 16-bit color (RGB565)
+
+    // setting display orientation
+    sendCommand(CMD_MADCTL);  // Memory Access Control
+    sendData(0x00);           // Default orientation
+
+    sendCommand(CMD_DISPON);  // Turn on display
+    vTaskDelay(pdMS_TO_TICKS(100));
+}
+
+void resetDisplay() {
+    gpio_set_level(TFT_RST, 0);
+    vTaskDelay(pdMS_TO_TICKS(10));
+    gpio_set_level(TFT_RST, 1);
+    vTaskDelay(pdMS_TO_TICKS(120));
 }

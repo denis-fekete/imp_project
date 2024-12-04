@@ -13,6 +13,9 @@ static DisplayBitmap display;
 spi_device_handle_t spi;
 
 void setup();
+void setRGB(unsigned index, uint8_t red, uint8_t green, uint8_t blue);
+RGB getRGB(unsigned index);
+void setBitmap(uint8_t red, uint8_t green, uint8_t blue);
 
 void app_main() {
     printf("\n\nESP32 started\n\n");
@@ -22,26 +25,9 @@ void app_main() {
    
     printf("\n\nInitial setup completed\n\n");
 
-    memset(display.data, 0x00, sizeof(display.data));
+    memset(display.data8b, 0x00, sizeof(display.data8b));
+    drawBitmap(display.data8b);
 
-    for(unsigned i = 0 ; i < 10; i++) {
-
-        unsigned index = 0;
-        for(unsigned y = 0; y < TFT_HEIGHT; y++) {
-            for(unsigned x = 0; x < TFT_HEIGHT; x++) {
-                index = (y * TFT_WIDTH + x) * 2;
-
-                display.data[index] += RGB(25, 25, 25);
-                display.data[index+1] += RGB(25, 25, 25);
-            }
-        }
-
-        drawBitmap(display.data);
-        vTaskDelay(pdMS_TO_TICKS(500));
-    }
-
-    vTaskDelay(pdMS_TO_TICKS(2000));
-    resetDisplay();
 }
 
 void setup() {
@@ -77,4 +63,35 @@ void setup() {
         .queue_size = 1,
     };
     spi_bus_add_device(HSPI_HOST, &devcfg, &spi);
+}
+
+void setBitmap(uint8_t red, uint8_t green, uint8_t blue) {
+    for(unsigned i = 0; i  < BITMAP_SIZE; i+=2) {
+        setRGB(i, red, green, blue);
+    }
+}
+
+/**
+ * @brief 
+ * 
+ * @param index 
+ * @param red 
+ * @param green 
+ * @param blue 
+ * 
+ * Source: how to send correct bits page 41/200, order is low
+ */
+void setRGB(unsigned index, uint8_t red, uint8_t green, uint8_t blue) {
+    display.data8b[index] = (blue << 3) | (green >> 3);
+    display.data8b[index + 1] = ((green & 0x07) << 5) | (red & 0x1F);
+}
+
+
+RGB getRGB(unsigned index) {
+    uint8_t red =  (display.data8b[index + 1] & 0x1F); ;
+    uint8_t green = (display.data8b[index] << 5) | (display.data8b[index + 1] >> 5); 
+    uint8_t blue = display.data8b[index] >> 3;
+
+    RGB tmp = {.red = red, .green = green, .blue = blue};
+    return tmp;
 }
