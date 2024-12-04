@@ -19,8 +19,12 @@
 // #define TFT_HEIGHT 128
 // #define TFT_WIDTH  128
 
-
+/**
+ * @brief Size of bitmap that will represent display, 2 Bytes will be used 
+ * per pixel using 16bit RGB565 configuration
+ */
 #define BITMAP_SIZE TFT_WIDTH * TFT_HEIGHT * 2
+
 typedef struct display_bitmap {
     union {
         uint8_t data8b[BITMAP_SIZE];
