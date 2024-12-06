@@ -12,8 +12,10 @@
 
 #include "lwip/err.h"
 #include "lwip/sys.h"
-#include "lwip/sockets.h"
+
+#include "project_setup.h"
+#include "udp_server.h"
+
 
 void wifi_task(void);
-
 #endif /*WIFI_TASK*/

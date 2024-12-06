@@ -1,0 +1,38 @@
+{
+	"folders": [
+		{
+			"name": "imp_project",
+			"path": "../../imp_project"
+		},
+		{
+			"name": "imp_project_driverless",
+			"path": ".."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"gpio.h": "c",
+			"project_setup.h": "c",
+			"spi_master.h": "c",
+			"string.h": "c",
+			"stdio.h": "c",
+			"driver.h": "c",
+			"array": "c",
+			"string": "c",
+			"string_view": "c",
+			"wifi_task.h": "c",
+			"sys.h": "c",
+			"esp_netif.h": "c",
+			"err.h": "c",
+			"esp_netif_ip_addr.h": "c",
+			"semphr.h": "c",
+			"task.h": "c",
+			"esp_log.h": "c",
+			"udp_server.h": "c",
+			"freertos.h": "c"
+		},
+		"cSpell.words": [
+			"LOGI"
+		]
+	}
+}

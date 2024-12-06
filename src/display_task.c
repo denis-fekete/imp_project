@@ -1,9 +1,5 @@
 #include "display_task.h"
 
-// Display Bitmap declared as global and static to be accessible through whole 
-// program and keep it in memory until end of program
-DisplayBitmap display;
-
 spi_device_handle_t spi;
 
 /**
@@ -22,7 +18,7 @@ void setup(void) {
 
     gpio_config(&io_config);
 
-    resetDisplay();
+    display_reset_hw();
 
     // Configure the SPI bus
     spi_bus_config_t buscfg = {
@@ -52,18 +48,105 @@ void setup(void) {
  * @param green 
  * @param blue 
  */
-void fillBitmap(uint8_t red, uint8_t green, uint8_t blue) {
+void bitmap_fill(uint8_t red, uint8_t green, uint8_t blue) {
     for(unsigned i = 0; i  < BITMAP_SIZE; i+=2) {
-        setRGB(i, red, green, blue);
+        bitmap_set_index(i, red, green, blue);
     }
+}
+/**
+ * Source: how to send correct bits page 41/200, order is low
+ */
+void bitmap_set_index(unsigned index, uint8_t red, uint8_t green, uint8_t blue) {
+    // normalize colors
+    red = min((red / 8), 31);
+    green = min((green / 4), 63);
+    blue = min((blue / 8), 31);
+    
+    // store them into bitmap
+    display.data8b[index] = (blue << 3) | (green >> 3);
+    display.data8b[index + 1] = ((green & 0x07) << 5) | (red & 0x1F);
 }
 
 /**
  * Source: how to send correct bits page 41/200, order is low
  */
-void setRGB(unsigned index, uint8_t red, uint8_t green, uint8_t blue) {
-    display.data8b[index] = (blue << 3) | (green >> 3);
-    display.data8b[index + 1] = ((green & 0x07) << 5) | (red & 0x1F);
+void bitmap_set(uint8_t x, uint8_t y, uint8_t red, uint8_t green, uint8_t blue) {
+    // normalize colors
+    red = min((red / 8), 31);
+    green = min((green / 4), 63);
+    blue = min((blue / 8), 31);
+    
+    // store them into bitmap
+    display.data8b[(y * TFT_WIDTH + x) * 2] = (blue << 3) | (green >> 3);
+    display.data8b[(y * TFT_WIDTH + x) * 2 + 1] = ((green & 0x07) << 5) | (red & 0x1F);
+}
+
+/**
+ * Source: how to send correct bits page 41/200, order is low
+ */
+uint8_t bitmap_set_row_uncompressed(uint8_t row, uint8_t* data) {
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+    const unsigned index = row * TFT_WIDTH;
+    const unsigned len = TFT_WIDTH * 3;
+
+    unsigned col = 0;
+
+    for(unsigned i = 0; i < len; i+=3, col++) {
+        // normalize colors
+        red = min((data[i] / 8), 31);
+        green = min((data[i+1] / 4), 63);
+        blue = min((data[i+2] / 8), 31);
+
+        // store them into bitmap
+        display.data8b[(index + col) * 2] = (blue << 3) | (green >> 3);
+        display.data8b[(index + col) * 2 + 1] = ((green & 0x07) << 5) | (red & 0x1F);
+    }
+
+    return 0;
+}
+
+/**
+ * Source: how to send correct bits page 41/200, order is low
+ */
+uint8_t bitmap_set_row_uncompressed_normalized(uint8_t row, uint8_t* data) {
+    const unsigned index = row * TFT_WIDTH;
+    const unsigned len = TFT_WIDTH * 3;
+    unsigned col = 0;
+    
+    uint8_t byte0, byte1;
+
+    for(unsigned i = 0; i < len; i+=3, col++) {
+        byte0 = (data[i+2] << 3) | (data[i+1] >> 3);
+        byte1 = (uint8_t)((data[i+1] & 0x07) << 5) | (data[i] & 0x1F);
+
+        // store them into bitmap
+        display.data8b[(index + col) * 2] = byte0;
+        display.data8b[(index + col) * 2 + 1] = byte1;
+
+        // normalize colors
+        // red = data[i];
+        // green = data[i+1];
+        // blue = data[i+2];
+        // display.data8b[(index + col) * 2] = (blue << 3) | (green >> 3);
+        // display.data8b[(index + col) * 2 + 1] = ((green & 0x07) << 5) | (red & 0x1F);
+    }
+
+    return 0;
+}
+
+/**
+ * Source: how to send correct bits page 41/200, order is low
+ */
+uint8_t bitmap_set_row(uint8_t row, uint8_t* data) {
+    // TODO: fix the repetition
+
+    for (unsigned i = 0; i < TFT_WIDTH; i++) {
+        display.data8b[(row * TFT_WIDTH * 2) + (i * 2)] = (uint8_t)data[i * 2];
+        display.data8b[(row * TFT_WIDTH * 2) + (i * 2) + 1] = (uint8_t)data[i * 2 + 1];
+    }
+    return 0;
 }
 
 /**
@@ -91,10 +174,10 @@ void display_task(void) {
     printf("#### ESP32 Display SPI handler started ####\n");
 
     setup();
-    initDisplay();
-    memset(display.data8b, 0x00, sizeof(display.data8b));
+    display_init();
 
     printf("#### ESP32 Display SPI setup ended ####\n");
+
 
     loop();
 }
@@ -103,22 +186,37 @@ void display_task(void) {
  * @brief Main loop of display task
  */
 void loop(void) {
+    esp_task_wdt_add(NULL);
+
     for(unsigned i = 0; 1; i++) {
-        if(i < 31) { // 0 - 31
-            fillBitmap(i, 0, 0);
-        } else if(i > 31 && i < 63) { // 32 - 63
-            fillBitmap(0, (i - 32) * 2, 0);
-        } else if(i > 63 && i < 95) { // 64 - 95
-            fillBitmap(0, 0, i - 64);
+        if(xSemaphoreTake(mutex, pdMS_TO_TICKS(500)) == pdTRUE ) {
+            if(display.changed) {
+                display_draw(display.data8b);
+            }
+            display.changed = false;
+            xSemaphoreGive(mutex);
         } else {
-            fillBitmap(i - 96, (i - 96) * 2, i - 96); // 96- 127
+            vTaskDelay(pdMS_TO_TICKS(100));
+            esp_task_wdt_reset(); // reset the watchdog
         }
 
-        drawBitmap(display.data8b);
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(10));
+        esp_task_wdt_reset(); // reset the watchdog
+    }
+}
 
-        if(i == 127) {
-            i = 0;
-        }
+void demo(unsigned i) {
+    if(i < 31) { // 0 - 31
+        bitmap_fill(i, 0, 0);
+    } else if(i > 31 && i < 63) { // 32 - 63
+        bitmap_fill(0, (i - 32) * 2, 0);
+    } else if(i > 63 && i < 95) { // 64 - 95
+        bitmap_fill(0, 0, i - 64);
+    } else {
+        bitmap_fill(i - 96, (i - 96) * 2, i - 96); // 96- 127
+    }
+
+    if(i == 127) {
+        i = 0;
     }
 }

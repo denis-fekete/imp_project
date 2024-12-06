@@ -26,10 +26,8 @@
 #define BITMAP_SIZE TFT_WIDTH * TFT_HEIGHT * 2
 
 typedef struct display_bitmap {
-    union {
-        uint8_t data8b[BITMAP_SIZE];
-        uint16_t data16b[BITMAP_SIZE/2];
-    };
+    bool changed;
+    uint8_t data8b[BITMAP_SIZE];
 } DisplayBitmap;
 
 typedef struct rgb_t {

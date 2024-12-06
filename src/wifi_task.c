@@ -80,9 +80,6 @@ void wifi_init_softap(void)
              EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS, EXAMPLE_ESP_WIFI_CHANNEL);
 }
 
-// void udp_server() {
-//     int socket_fd = socket(AF_INET);
-// }
 
 void wifi_task(void)
 {

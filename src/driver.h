@@ -16,12 +16,13 @@
 #define CMD_MADCTL  0x36 /*Memory access control 14.2.29*/
 #define CMD_COLMOD  0x3A /*Interface Pixel Format 14.2.33*/
 
-void sendCommand(uint8_t command);
-void sendData(uint8_t data);
-void sendDataBuffer(const uint8_t *data, size_t size);
-void initDisplay();
-void drawBitmap(const uint8_t *bitmap);
-void resetDisplay();
+void send_cmd(uint8_t command);
+void send_data(uint8_t data);
+void send_data_buffer(const uint8_t *data, size_t size);
+void display_init();
+void display_draw(const uint8_t *bitmap);
+void display_reset_sw();
+void display_reset_hw();
 
 extern spi_device_handle_t spi;
 
