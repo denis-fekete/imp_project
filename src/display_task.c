@@ -88,7 +88,7 @@ uint8_t bitmap_set_row_uncompressed(uint8_t row, uint8_t* data) {
     uint8_t red;
     uint8_t green;
     uint8_t blue;
-    const unsigned index = row * TFT_WIDTH;
+    const unsigned index = min(row, TFT_HEIGHT) * TFT_WIDTH;
     const unsigned len = TFT_WIDTH * 3;
 
     unsigned col = 0;
@@ -111,7 +111,7 @@ uint8_t bitmap_set_row_uncompressed(uint8_t row, uint8_t* data) {
  * Source: how to send correct bits page 41/200, order is low
  */
 uint8_t bitmap_set_row_uncompressed_normalized(uint8_t row, uint8_t* data) {
-    const unsigned index = row * TFT_WIDTH;
+    const unsigned index = min(row, TFT_HEIGHT) * TFT_WIDTH;
     const unsigned len = TFT_WIDTH * 3;
     unsigned col = 0;
     
@@ -124,13 +124,6 @@ uint8_t bitmap_set_row_uncompressed_normalized(uint8_t row, uint8_t* data) {
         // store them into bitmap
         display.data8b[(index + col) * 2] = byte0;
         display.data8b[(index + col) * 2 + 1] = byte1;
-
-        // normalize colors
-        // red = data[i];
-        // green = data[i+1];
-        // blue = data[i+2];
-        // display.data8b[(index + col) * 2] = (blue << 3) | (green >> 3);
-        // display.data8b[(index + col) * 2 + 1] = ((green & 0x07) << 5) | (red & 0x1F);
     }
 
     return 0;
@@ -140,12 +133,38 @@ uint8_t bitmap_set_row_uncompressed_normalized(uint8_t row, uint8_t* data) {
  * Source: how to send correct bits page 41/200, order is low
  */
 uint8_t bitmap_set_row(uint8_t row, uint8_t* data) {
-    // TODO: fix the repetition
+    const unsigned index = min(row, TFT_HEIGHT) * TFT_WIDTH * 2;
 
     for (unsigned i = 0; i < TFT_WIDTH; i++) {
-        display.data8b[(row * TFT_WIDTH * 2) + (i * 2)] = (uint8_t)data[i * 2];
-        display.data8b[(row * TFT_WIDTH * 2) + (i * 2) + 1] = (uint8_t)data[i * 2 + 1];
+        display.data8b[index + (i * 2)] = (uint8_t)data[i * 2];
+        display.data8b[index + (i * 2) + 1] = (uint8_t)data[i * 2 + 1];
     }
+
+    return 0;
+}
+
+uint8_t bitmap_set_pix(uint8_t row, uint8_t col, uint8_t r, uint8_t g, uint8_t b) {
+    // normalize colors
+    uint8_t red = min((r / 8), 31);
+    uint8_t green = min((g / 4), 63);
+    uint8_t blue = min((b / 8), 31);
+    
+    const unsigned index = (row * TFT_WIDTH + col) * 2;
+
+    // store them into bitmap
+    display.data8b[index] = (blue << 3) | (green >> 3);
+    display.data8b[index + 1] = ((green & 0x07) << 5) | (red & 0x1F);
+
+    return 0;
+}
+
+uint8_t bitmap_set_pix_normalized(uint8_t row, uint8_t col, uint8_t byte0, uint8_t byte1) {    
+    const unsigned index = (row * TFT_WIDTH + col) * 2;
+    
+    // store them into bitmap
+    display.data8b[index] = byte0;
+    display.data8b[index + 1] = byte1;
+
     return 0;
 }
 

@@ -11,43 +11,57 @@ int cmd_fill(uint8_t* data) {
     return 0;
 }
 
-int cmd_set_row(uint8_t* data) {
+int cmd_set_row(uint8_t command, uint8_t* data) {
     uint8_t res = 0;
+    CommandSetRow* cmd = (void*)data;
 
     if(xSemaphoreTake(mutex, portMAX_DELAY)) {
         display.changed = true;
-        res = bitmap_set_row(data[0], (data + 1) );
+        switch(command) {
+            case CMD_SET_ROW:;
+                ESP_LOGI("UDP", "compressed Row: %i\n", cmd->row);
+                res = bitmap_set_row(cmd->row, (data + sizeof(CommandSetRow)));
+                break;
+            case CMD_SET_ROW_UCMP:;
+                ESP_LOGI("UDP", "uncompressed Row: %i\n", cmd->row);
+                res = bitmap_set_row_uncompressed(cmd->row, (data + sizeof(CommandSetRow)));
+                break;
+            case CMD_SET_ROW_UCMP_NORM:;
+                ESP_LOGI("UDP", "normalized uncompressed Row: %i\n", cmd->row);
+                res = bitmap_set_row_uncompressed_normalized(cmd->row, (data + sizeof(CommandSetRow)));
+                break;
+        }
         xSemaphoreGive(mutex);
     }
 
     return res;
 }
 
-int cmd_set_row_uncompressed(uint8_t* data) {
+int cmd_set_pix_norm(uint8_t* data) {
     uint8_t res = 0;
+    CommandSetPixel* cmd = (void*)data;
 
     if(xSemaphoreTake(mutex, portMAX_DELAY)) {
         display.changed = true;
-        res = bitmap_set_row_uncompressed(data[0], (data + 1));
+        res = bitmap_set_pix_normalized(cmd->row, cmd->col, cmd->byte0, cmd->byte1);
         xSemaphoreGive(mutex);
     }
 
     return res;
 }
 
-
-int cmd_set_row_uncompressed_norm(uint8_t* data) {
+int cmd_set_pix(uint8_t* data) {
     uint8_t res = 0;
+    CommandSetPixel* cmd = (void*)data;
 
     if(xSemaphoreTake(mutex, portMAX_DELAY)) {
         display.changed = true;
-        res = bitmap_set_row_uncompressed_normalized(data[0], (data+1));
+        res = bitmap_set_pix(cmd->row, cmd->col, cmd->red, cmd->green, cmd->blue);
         xSemaphoreGive(mutex);
     }
 
     return res;
 }
-
 
 uint8_t server_fsm(uint8_t* data) {
     uint8_t res = 0;
@@ -71,31 +85,23 @@ uint8_t server_fsm(uint8_t* data) {
         break;
 
     case CMD_SET_PIX:;
+        cmd_set_pix((data + 1));
         ESP_LOGI("UDP", "Received set pix command\n");
         return data[0];
         break;
 
+    case CMD_SET_PIX_NORM:;
+        cmd_set_pix_norm((data + 1));
+        ESP_LOGI("UDP", "Received set pix command\n");
+        return data[0];
+        break;
+
+
     case CMD_SET_ROW_UCMP:;
-        ESP_LOGI("UDP", "Received set row uncompressed command\n");
-        res = cmd_set_row_uncompressed((data + 1));
-
-        if(res == 0) {
-            return data[0];
-        }
-        break;
-
     case CMD_SET_ROW_UCMP_NORM:;
-        ESP_LOGI("UDP", "Received set row uncompressed normalized command\n");
-        res = cmd_set_row_uncompressed_norm((data + 1));
-
-        if(res == 0) {
-            return data[0];
-        }
-        break;
-
-    case CMD_SET_ROW:
-        ESP_LOGI("UDP", "Received set row compressed and normalized command\n");
-        res = cmd_set_row((data + 1));
+    case CMD_SET_ROW:;
+        ESP_LOGI("UDP", "Received set row command\n");
+        res = cmd_set_row(data[0], (data + 1));
 
         if(res == 0) {
             return data[0];
@@ -109,14 +115,6 @@ uint8_t server_fsm(uint8_t* data) {
 
 void udp_server(void) {
     esp_task_wdt_add(NULL);
-    // esp_task_wdt_config_t config = {
-    //     .timeout_ms = 3000,
-    //     .idle_core_mask = 0,
-    //     .trigger_panic = true
-    // };
-    // if(esp_task_wdt_init(&config) == ESP_FAIL) {
-    //     ESP_LOGE("TASK_WDT", "Task failed to register with the watchdog!");
-    // }
     
     esp_err_t status = esp_task_wdt_status(NULL); // Check for the current task
     if (status == ESP_ERR_NOT_FOUND) {

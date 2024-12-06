@@ -45,6 +45,16 @@ uint8_t bitmap_set_row_uncompressed(uint8_t row, uint8_t* data);
 uint8_t bitmap_set_row_uncompressed_normalized(uint8_t row, uint8_t* data);
 
 /**
+ * Source: how to send correct bits page 41/200, order is low
+ */
+uint8_t bitmap_set_pix(uint8_t row, uint8_t col, uint8_t r, uint8_t g, uint8_t b);
+
+/**
+ * Source: how to send correct bits page 41/200, order is low
+ */
+uint8_t bitmap_set_pix_normalized(uint8_t row, uint8_t col, uint8_t byte0, uint8_t byte1);
+
+/**
  * @brief Returns RGB values of given pixel
  * 
  * @param x x position of pixel
