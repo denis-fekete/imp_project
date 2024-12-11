@@ -26,15 +26,15 @@
 #define CMD_FILL 0x11 // RED GREEN BLUE
 
 // sets row with given values, [] is a array
-#define CMD_SET_ROW_UCMP 0x21 // ROW [RED, GREEN, BLUE] - non compressed version
-#define CMD_SET_ROW_UCMP_NORM 0x22 // ROW [RED, GREEN, BLUE] - non compressed normalized
-#define CMD_SET_ROW 0x23 // ROW [COLOR_BYTE_0, COLOR_BYTE_1] - compressed and normalized
+#define CMD_SET_ROW_UCMP 0x20 // ROW [RED, GREEN, BLUE] - non compressed version
+#define CMD_SET_ROW_UCMP_NORM 0x21 // ROW [RED, GREEN, BLUE] - non compressed normalized
+#define CMD_SET_ROW 0x22 // ROW [COLOR_BYTE_0, COLOR_BYTE_1] - compressed and normalized
 
 // sets a pixel and row and col
-#define CMD_SET_PIX 0x25 // ROW COL RED GREEN BLUE - sets color to pixel
-#define CMD_SET_PIX_NORM 0x26 // ROW COL RED GREEN BLUE - sets color to pixel, values must be normalized to RGB565 values
+#define CMD_SET_PIX 0x30 // ROW COL RED GREEN BLUE - sets color to pixel
+#define CMD_SET_PIX_NORM 0x31 // ROW COL BYTE0 BYTE1 - sets color to pixel, values must be normalized to RGB565 values
 
-#define CMD_SET_PIX_VECTOR 0x30 // NUMBER_OF_PIXEL [ROW COL BYTE0 BYTE1]
+#define CMD_SET_PIX_VECTOR 0x40 // NUMBER_OF_PIXEL [ROW COL BYTE0 BYTE1]
 #define CMD_UNKNOWN 0xEE
 
 
