@@ -1,5 +1,5 @@
 #include "udp_server.h"
-int cmd_fill(uint8_t* data) {
+void cmd_fill(uint8_t* data) {
     CommandFill* cmd = (void*)(data);
 
     if(xSemaphoreTake(mutex, portMAX_DELAY)) {
@@ -7,12 +7,9 @@ int cmd_fill(uint8_t* data) {
         bitmap_fill(cmd->red, cmd->green, cmd->blue);
         xSemaphoreGive(mutex);
     }
-
-    return 0;
 }
 
-int cmd_set_row(uint8_t command, uint8_t* data) {
-    uint8_t res = 0;
+void cmd_set_row(uint8_t command, uint8_t* data) {
     CommandSetRow* cmd = (void*)data;
 
     if(xSemaphoreTake(mutex, portMAX_DELAY)) {
@@ -20,92 +17,98 @@ int cmd_set_row(uint8_t command, uint8_t* data) {
         switch(command) {
             case CMD_SET_ROW:;
                 ESP_LOGI("UDP", "compressed Row: %i\n", cmd->row);
-                res = bitmap_set_row(cmd->row, (data + sizeof(CommandSetRow)));
+                bitmap_set_row(cmd->row, (data + sizeof(CommandSetRow)));
                 break;
             case CMD_SET_ROW_UCMP:;
                 ESP_LOGI("UDP", "uncompressed Row: %i\n", cmd->row);
-                res = bitmap_set_row_uncompressed(cmd->row, (data + sizeof(CommandSetRow)));
+                bitmap_set_row_uncompressed(cmd->row, (data + sizeof(CommandSetRow)));
                 break;
             case CMD_SET_ROW_UCMP_NORM:;
                 ESP_LOGI("UDP", "normalized uncompressed Row: %i\n", cmd->row);
-                res = bitmap_set_row_uncompressed_normalized(cmd->row, (data + sizeof(CommandSetRow)));
+                bitmap_set_row_uncompressed_normalized(cmd->row, (data + sizeof(CommandSetRow)));
                 break;
         }
         xSemaphoreGive(mutex);
     }
-
-    return res;
 }
 
-int cmd_set_pix_norm(uint8_t* data) {
-    uint8_t res = 0;
+void cmd_set_pix_norm(uint8_t* data) {
     CommandSetPixel* cmd = (void*)data;
 
     if(xSemaphoreTake(mutex, portMAX_DELAY)) {
         display.changed = true;
-        res = bitmap_set_pix_normalized(cmd->row, cmd->col, cmd->byte0, cmd->byte1);
+        bitmap_set_pix_normalized(cmd->row, cmd->col, cmd->byte0, cmd->byte1);
         xSemaphoreGive(mutex);
     }
-
-    return res;
 }
 
-int cmd_set_pix(uint8_t* data) {
-    uint8_t res = 0;
+void cmd_set_pix(uint8_t* data) {
     CommandSetPixel* cmd = (void*)data;
 
     if(xSemaphoreTake(mutex, portMAX_DELAY)) {
         display.changed = true;
-        res = bitmap_set_pix(cmd->row, cmd->col, cmd->red, cmd->green, cmd->blue);
+        bitmap_set_pix(cmd->row, cmd->col, cmd->red, cmd->green, cmd->blue);
+        xSemaphoreGive(mutex);
+    }
+}
+
+void cmd_set_pix_vector(uint8_t* data, size_t len) {
+    CommandPixelVector* cmd = (void*)data;
+    unsigned offset = 2; // sizeof(CommandPixelVector);
+
+    uint16_t number_of_pixels = (cmd->no_high << 8) | (cmd->no_low); 
+    
+    if(xSemaphoreTake(mutex, portMAX_DELAY)) {
+        display.changed = true;
+
+        for(uint16_t i = 0; i < number_of_pixels; i++) {
+            bitmap_set_pix_normalized((data + offset)[0], (data + offset)[1], (data + offset)[2], (data + offset)[3]);
+            offset += 4;
+        }
+
         xSemaphoreGive(mutex);
     }
 
-    return res;
 }
 
-uint8_t server_fsm(uint8_t* data) {
-    uint8_t res = 0;
+uint8_t server_fsm(uint8_t* data, size_t len) {
     switch (data[0])
     {
     case CMD_CLEAR:
-        ESP_LOGI("UDP", "Received clear command\n");
+        // ESP_LOGI("UDP", "Received clear command\n");
         display_reset_sw();
         return data[0];
         break;
         
     case CMD_FILL:;
-        ESP_LOGI("UDP", "Received fill command\n");
+        // ESP_LOGI("UDP", "Received fill command\n");
         cmd_fill((data + 1));
         return data[0];
         break;
 
-    case CMD_FILL_RECT:;
-        ESP_LOGI("UDP", "Received fill rect command\n");
-        return data[0];
-        break;
-
     case CMD_SET_PIX:;
+        // ESP_LOGI("UDP", "Received set pix command\n");
         cmd_set_pix((data + 1));
-        ESP_LOGI("UDP", "Received set pix command\n");
         return data[0];
         break;
 
     case CMD_SET_PIX_NORM:;
+        // ESP_LOGI("UDP", "Received set pix command\n");
         cmd_set_pix_norm((data + 1));
-        ESP_LOGI("UDP", "Received set pix command\n");
         return data[0];
         break;
 
-
+    case CMD_SET_PIX_VECTOR:;
+        cmd_set_pix_vector((data + 1), len);
+        return data[0];
+        break;
+        
     case CMD_SET_ROW_UCMP:;
     case CMD_SET_ROW_UCMP_NORM:;
     case CMD_SET_ROW:;
-        ESP_LOGI("UDP", "Received set row command\n");
-        res = cmd_set_row(data[0], (data + 1));
-
-        if(res == 0) {
-            return data[0];
-        }
+        // ESP_LOGI("UDP", "Received set row command\n");
+        cmd_set_row(data[0], (data + 1));
+        return data[0];
         break;
     }
 
@@ -126,12 +129,12 @@ void udp_server(void) {
     ESP_LOGI("UDP Server", "Server is staring\n");
     int sock;
     struct sockaddr_in server_addr, client_addr;
-    uint8_t buffer[TFT_WIDTH * 3 + 10];
+    uint8_t buffer[255 * 4 + 32];
     socklen_t addr_len = sizeof(client_addr);
 
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(1234);
+    server_addr.sin_port = htons(50001);
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     bind(sock, (struct sockaddr *)&server_addr, sizeof(server_addr));
 
@@ -144,18 +147,18 @@ void udp_server(void) {
     uint8_t cmd = CMD_UNKNOWN;
     const uint8_t CMD_CONF = CMD_CONFIRM; 
 
-    ESP_LOGI("UDP Server", "Server is waiting for packets\n");
+    // ESP_LOGI("UDP Server", "Server is waiting for packets\n");
     while (1) {
         int len = recvfrom(sock, buffer, sizeof(buffer) - 1, 0, (struct sockaddr *)&client_addr, &addr_len);
         if (len > 0) {
-            cmd = server_fsm(buffer);
+            cmd = server_fsm(buffer, len);
 
             if(cmd == CMD_UNKNOWN) {
                 esp_task_wdt_reset(); // reset the watchdog
                 continue;
             }
 
-            ESP_LOGI("UDP Server", "Sending confirm to client: %s\n", inet_ntoa(client_addr.sin_addr));
+            // ESP_LOGI("UDP Server", "Sending confirm to client: %s\n", inet_ntoa(client_addr.sin_addr));
             sendto(sock, &CMD_CONF, sizeof(CMD_CONF), 0, (struct sockaddr *)&client_addr, addr_len);
 
         }

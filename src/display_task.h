@@ -1,3 +1,12 @@
+/**
+ * @file display_task.h
+ * @author Denis Fekete (xfeket01@vutbr.cz)
+ * @brief 
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #ifndef DISPLAY_TASK
 #define DISPLAY_TASK
 
@@ -5,7 +14,6 @@
 #include "driver/gpio.h"
 #include "esp_task_wdt.h"
 #include "esp_log.h"
-
 #include "project_setup.h"
 #include "driver.h"
 
@@ -20,39 +28,61 @@ extern DisplayBitmap display;
 void display_task(void);
 
 /**
- * Source: how to send correct bits page 41/200, order is low
- */
-void bitmap_set(uint8_t x, uint8_t y, uint8_t red, uint8_t green, uint8_t blue);
-
-/**
- * Source: how to send correct bits page 41/200, order is low
+ * @brief Sets RGB values to specific index in bitmap
+ * 
+ * @param index index of pixel to be changed
+ * @param red new red value
+ * @param green new green value
+ * @param blue new blue value
  */
 void bitmap_set_index(unsigned index, uint8_t red, uint8_t green, uint8_t blue);
 
 /**
- * Source: how to send correct bits page 41/200, order is low
+ * @brief Sets pixel values at given row
+ * 
+ * @param row row that will be changed
+ * @param data data buffer containing compressed and normalized RGB565 values to be set 
  */
-uint8_t bitmap_set_row(uint8_t row, uint8_t* data);
+void bitmap_set_row(uint8_t row, uint8_t* data);
 
 /**
- * Source: how to send correct bits page 41/200, order is low
+ * @brief Sets pixel values at given row
+ * 
+ * @param row row that will be changed
+ * @param data data buffer containing RGB values, 1 byte per color == 3 bytes per pixel
  */
-uint8_t bitmap_set_row_uncompressed(uint8_t row, uint8_t* data);
+void bitmap_set_row_uncompressed(uint8_t row, uint8_t* data);
 
 /**
- * Source: how to send correct bits page 41/200, order is low
+ * @brief Sets pixel values at given row
+ * 
+ * @param row row that will be changed
+ * @param data data buffer containing RGB values, 1 byte per color == 3 bytes 
+ * per pixel. Values must be normalized to RGB565 maximum values (31 for red 
+ * and blue, 63 for green)
  */
-uint8_t bitmap_set_row_uncompressed_normalized(uint8_t row, uint8_t* data);
+void bitmap_set_row_uncompressed_normalized(uint8_t row, uint8_t* data);
 
 /**
- * Source: how to send correct bits page 41/200, order is low
+ * @brief Sets RGB values to specific pixel at given y(row) and x(col)
+ * 
+ * @param x column of pixel that will be changed
+ * @param y row of pixel that will be changed
+ * @param red new red value
+ * @param green new green value
+ * @param blue new blue value
  */
-uint8_t bitmap_set_pix(uint8_t row, uint8_t col, uint8_t r, uint8_t g, uint8_t b);
+void bitmap_set_pix(uint8_t row, uint8_t col, uint8_t r, uint8_t g, uint8_t b);
 
 /**
- * Source: how to send correct bits page 41/200, order is low
+ * @brief Sets RGB values to specific pixel at given y(row) and x(col), values must be normalized and in RGB565 format
+ * 
+ * @param row row of pixel that will be changed
+ * @param col column of pixel that will be changed
+ * @param byte0 byte containing 5 bits of Red, and more significant 3 bits from Green
+ * @param byte1 byte containing 5 bits of Blue, and less significant 3 bits from Green
  */
-uint8_t bitmap_set_pix_normalized(uint8_t row, uint8_t col, uint8_t byte0, uint8_t byte1);
+void bitmap_set_pix_normalized(uint8_t row, uint8_t col, uint8_t byte0, uint8_t byte1);
 
 /**
  * @brief Returns RGB values of given pixel

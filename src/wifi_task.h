@@ -1,3 +1,12 @@
+/**
+ * @file wifi_task.h
+ * @author Denis Fekete (xfeket01@vutbr.cz)
+ * @brief 
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #ifndef WIFI_TASK
 #define WIFI_TASK
 
@@ -9,10 +18,8 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
-
 #include "lwip/err.h"
 #include "lwip/sys.h"
-
 #include "project_setup.h"
 #include "udp_server.h"
 
