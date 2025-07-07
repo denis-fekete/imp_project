@@ -6,6 +6,7 @@
 
 **Github imp_drawing: https://github.com/denis-fekete/imp_bitmap_editor**
 
+**Video: https://youtu.be/6umidr8pQB8**
 
 ## About:
 This is project for Mikroprocesorové a vestavěné systémy, project demonstrates serial communication between ESP32 and TFT display ILI9163C, communication between ESP32 and user is implemented through WiFi and simple protocol based on UDP (User Datagram Protocol).
