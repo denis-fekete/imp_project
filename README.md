@@ -1,7 +1,9 @@
 # IMP Project 2024/2025
 
 **Author: Denis Fekete, xfeket01@fit.vutbr.cz**
+
 **Github imp_project: https://github.com/denis-fekete/imp_project**
+
 **Github imp_drawing: https://github.com/denis-fekete/imp_bitmap_editor**
 
 
